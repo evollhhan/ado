@@ -1,4 +1,10 @@
 interface IAudioPlayer {
+  /** URL地址 */
+  src: string;
+
+  /** 音频时长 */
+  duration: number;
+
   /**
    * 加载音乐。
    * @param src 音频URL地址
@@ -23,4 +29,10 @@ interface IAudioPlayer {
    * @param mute 是否静音
    */
   mute(mute: boolean): void;
+
+  /**
+   * 循环播放
+   * @param loop 是否循环
+   */
+  loop(loop: boolean): void;
 }

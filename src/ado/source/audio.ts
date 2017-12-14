@@ -1,17 +1,17 @@
 /**
- * HTMLAudioElement Source
+ * HTMLAudioElement Player
  *
  * ATTENTION：
  * [1] 在ios较低版本中无法通过js控制静音，需要用户行为触发。
  * [2] ios默认无法自动播放音频，需要在用户执行任意操作之后才能触发。
  */
-export default class AudioSource implements IAudioPlayer {
+export default class AdoPlayer implements IAudioPlayer {
   /** URL地址 */
   public src: string;
   /** 音频时长 */
   public duration: number;
   /** Audio标签 */
-  private audio: HTMLAudioElement;
+  public audio: HTMLAudioElement;
   /** 音频加载状态 */
   private ready: boolean;
   /** Promise.resolve */
@@ -115,5 +115,13 @@ export default class AudioSource implements IAudioPlayer {
    */
   public mute(mute: boolean = true): void {
     this.audio.muted = mute;
+  }
+
+  /**
+   * 循环播放
+   * @param loop 是否循环
+   */
+  public loop(loop: boolean = true): void {
+    this.audio.loop = loop;
   }
 }

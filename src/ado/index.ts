@@ -49,38 +49,6 @@ class Sounder {
     }
     return this;
   }
-
-  public loop(isLoop: boolean): Sounder {
-    this.audio.loop = isLoop;
-    return this;
-  }
-
-  public play(time?: number): Sounder {
-    if (time) { this.audio.currentTime = time; }
-
-    if (this.seal) {
-      this.audio.play();
-    } else {
-      this.seal = true;
-      this.currentNode.connect(this.ctx.destination);
-      this.audio.addEventListener('canplay', () => {
-        this.audio.play();
-      })
-
-      if (!this.src) {
-        console.warn('No media source found.');
-      } else {
-        this.audio.src = this.src;
-      }
-    }
-
-    return this;
-  }
-
-  public pause(): Sounder {
-    this.audio.pause();
-    return this;
-  }
 }
 
 /**
@@ -135,7 +103,7 @@ class Processor extends PipeNode {
 /**
  * Class Ado
  */
-export class Ado {
+class Ado {
   /** audio context */
   public ctx: AudioContext;
 
@@ -165,3 +133,13 @@ export class Ado {
     return processor;
   }
 }
+
+import Stage from './core/stage';
+import Processor from './processor';
+import Player from './source/audio';
+
+export {
+  Stage,
+  Player,
+  Processor
+};
