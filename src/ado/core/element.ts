@@ -1,12 +1,11 @@
 import AdoPlayer from '../source/audio';
+import PipeNode from './pipe-node';
 
 export class AdoElement {
   /** 元素id */
   public readonly id: number;
   /** 音频上下文 */
   public readonly ctx: AudioContext;
-  /** 输入源 */
-  private source: AdoPlayer;
   /** 输入节点 */
   private sourceNode: AudioNode;
   /** 当前节点 */
@@ -26,19 +25,22 @@ export class AdoElement {
    * @param source 输入源
    */
   public input(source: AdoPlayer): void {
-    this.source = source;
+    this.sourceNode = this.ctx.createMediaElementSource(source.audio);
+    this.currentNode = this.sourceNode;
   }
 
   /**
    * 添加音频节点
-   * @param node 音频节点
+   * @param nodeType 音频节点类型
    */
-  public append(node: AudioNode): void {
-    if (!this.sourceNode) {
-      return console.warn('Use method "input" to input an audio source first.');
+  public append<T>(nodeType: T): T {
+    const instance: T = new (nodeType as any)(this.ctx, Date.now());
+    if (!(instance instanceof PipeNode)) {
+      throw new Error('Invalid Ado node type.');
     }
 
-    this.list.push(node);
+    this.list.push(instance.node);
+    return instance;
   }
 
   /**
@@ -46,12 +48,9 @@ export class AdoElement {
    * @param ctx 音频上下文
    */
   public load(): void {
-    if (this.sourceNode) {
+    if (this.currentNode) {
       return;
     }
-
-    this.sourceNode = this.ctx.createMediaElementSource(this.source.audio);
-    this.currentNode = this.sourceNode;
 
     this.list.forEach(node => {
       this.currentNode.connect(node);
