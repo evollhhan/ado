@@ -1,0 +1,16 @@
+/**
+ * Audio Listener
+ */
+class Listener extends PipeNode {
+  private node: PannerNode;
+
+  constructor(ctx: AudioContext) {
+    const panner = ctx.createPanner();
+    super(panner);
+    this.node = panner;
+  }
+
+  public setPosition(x: number, y: number, z: number): void {
+    this.node.setPosition(x, y, z);
+  }
+}

@@ -133,31 +133,11 @@ class Processor extends PipeNode {
 }
 
 /**
- *
- * Audio Listener
- * --------------
+ * Class Ado
  */
-class Listener extends PipeNode {
-  private node: PannerNode;
-
-  constructor(ctx: AudioContext) {
-    const panner = ctx.createPanner();
-    super(panner);
-    this.node = panner;
-  }
-
-  public setPosition(x: number, y: number, z: number): void {
-    this.node.setPosition(x, y, z);
-  }
-}
-
-/**
- *
- * Ado
- * -----
- */
-export default class Ado {
-  private ctx: AudioContext;
+export class Ado {
+  /** audio context */
+  public ctx: AudioContext;
 
   constructor() {
     this.ctx = new AudioContext();
@@ -183,9 +163,5 @@ export default class Ado {
       processor.useHandler(handler);
     }
     return processor;
-  }
-
-  public createPanner(): Listener {
-    return new Listener(this.ctx);
   }
 }

@@ -1,0 +1,233 @@
+declare global {
+  interface Window {
+    AudioContext: any;
+    webkitAudioContext: any;
+  }
+}
+
+interface IAdoConf {
+  /** 更新帧率，每一帧会触发onTick事件 */
+  fps?: number;
+}
+
+const DEFAULT_CONF: IAdoConf = {
+  fps: 2
+}
+
+// stable from buffer source
+export default class Ado {
+  public src: string;
+  private ctx: AudioContext;
+  private source: AudioBufferSourceNode;
+  private audioData: AudioBuffer;
+  private duration: number;
+  private fps: number;
+  private playstate: 'unload' | 'ready' | 'playing' | 'pause';
+  private startTime: number;
+  private playTime: number;
+  private endTime: number;
+  private checkTime: number;
+  private tickCbList: TFunction[];
+  private replayCbList: TFunction[];
+  private endCbList: TFunction[];
+  private gainNode: GainNode;
+  private raf: any;
+  private caf: any;
+
+  constructor(src: string, conf?: IAdoConf) {
+    conf = {...DEFAULT_CONF, ...conf};
+    const ctx = window.AudioContext || window.webkitAudioContext;
+    this.ctx = new ctx();
+    this.src = src;
+    this.fps = 1000 / conf.fps;
+    this.playstate = 'unload';
+    this.startTime = 0;
+    this.checkTime = 0;
+    this.playTime = 0;
+    this.endTime = 0;
+    this.tickCbList = [];
+    this.replayCbList = [];
+    this.endCbList = [];
+    this.gainNode = this.ctx.createGain();
+    this.gainNode.connect(this.ctx.destination);
+    const { raf, caf } = this.rafPolyfill();
+    this.raf = raf;
+    this.caf = caf;
+  }
+
+  public load(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('get', this.src, true);
+      xhr.responseType = 'arraybuffer';
+      xhr.onload = async () => {
+        try {
+          await this.bindAudioBuffer(xhr.response);
+        } catch (e) {
+          console.log('[Player] 生成音频数据失败:', e);
+        }
+        this.playstate = 'ready';
+        console.log('[Player] 音乐初始化成功。');
+        resolve();
+      };
+      xhr.onerror = (e) => {
+        console.log('[Player] 音乐初始化失败:', e);
+        reject(e);
+      }
+      xhr.send();
+    })
+  }
+
+  /**
+   * 绑定音频数据。
+   * @param buffer 音频数据
+   */
+  public bindAudioBuffer(buffer: ArrayBuffer): Promise<void> {
+    return new Promise(resolve => {
+      this.ctx.decodeAudioData(buffer, buf => {
+        this.audioData = buf;
+        this.duration = buf.duration;
+        resolve();
+      })
+    })
+  }
+
+  public play(time: number = 0): void {
+    if (this.playstate === 'playing' || this.playstate === 'unload') {
+      return;
+    }
+    this.source = this.ctx.createBufferSource();
+    this.source.buffer = this.audioData;
+    this.connectSound(this.source);
+    // this.source.connect(this.ctx.destination);
+    if (this.playstate === 'ready') {
+      this.endTime = this.ctx.currentTime + this.duration;
+      this.startTime = this.ctx.currentTime;
+    } else if (this.playstate === 'pause') {
+      this.endTime = this.ctx.currentTime + this.duration - this.playTime;
+      this.startTime = this.ctx.currentTime - this.playTime;
+      time = this.playTime;
+    }
+    this.playstate = 'playing';
+    this.source.start(0, time);
+    this.tick()
+  }
+
+  public replay(): void {
+    this.replayCbList.forEach(cb => {
+      cb();
+    })
+
+    this.clearSourceNode();
+    this.playstate = 'ready';
+    this.play(0);
+  }
+
+  public onReplay(cb: TFunction): void {
+    this.replayCbList.push(cb);
+  }
+
+  public clearSourceNode(): void {
+    if (!this.source) {
+      return;
+    }
+
+    this.source.stop(0);
+    this.disconnectSound(this.source);
+    this.source = null;
+  }
+
+  public pause(): void {
+    if (this.playstate !== 'playing') {
+      return;
+    }
+
+    this.playstate = 'pause';
+    this.clearSourceNode();
+    this.playTime = this.ctx.currentTime - this.startTime;
+  }
+
+  public onTick(cb: TFunction): void {
+    this.tickCbList.push(cb);
+  }
+
+  public onEnd(cb: TFunction): void {
+    this.endCbList.push(cb);
+  }
+
+  public mute(mute: boolean = true) {
+    this.gainNode.gain.value = mute ? 0 : 1;
+  }
+
+  private connectSound(node: AudioNode): void {
+    node.connect(this.gainNode);
+  }
+
+  private disconnectSound(node: AudioNode): void {
+    node.disconnect(this.gainNode);
+  }
+
+  private tick(): void {
+    const req = this.raf(this.tick.bind(this));
+
+    if (this.playstate === 'pause') {
+      this.caf(req);
+      return;
+    }
+
+    if (this.ctx.currentTime >= this.endTime) {
+      this.caf(req);
+      this.clearSourceNode();
+      this.playTime = 0;
+      this.playstate = 'ready';
+      this.endCbList.forEach(cb => { cb(); })
+      return;
+    }
+
+    const now = Date.now();
+    if (now - this.checkTime > this.fps) {
+      this.checkTime = now;
+      this.playTime = this.ctx.currentTime - this.startTime;
+      // task here...
+      // console.log(this.playTime);
+      this.tickCbList.forEach(cb => {
+        cb.call(null, this.playTime);
+      })
+    }
+  }
+
+  private rafPolyfill(): any {
+    const raf = (() => {
+      if (window.requestAnimationFrame) {
+        return window.requestAnimationFrame.bind(window)
+      }
+      else if (window.webkitRequestAnimationFrame) {
+        return window.webkitRequestAnimationFrame.bind(window)
+      }
+      else {
+        return ((fn) => {
+          return setTimeout(fn, this.fps);
+        });
+      }
+    })();
+
+    const caf = (() => {
+      if (window.cancelAnimationFrame) {
+        return window.cancelAnimationFrame.bind(window)
+      }
+      else if (window.webkitCancelAnimationFrame) {
+        return window.webkitCancelAnimationFrame.bind(window)
+      }
+      else {
+        return ((requestId) => {
+          return clearTimeout(requestId);
+        });
+      }
+    })();
+
+    return {
+      raf,
+      caf
+    }
+  }
+}
