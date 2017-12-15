@@ -1,4 +1,5 @@
 import '@libs/orbit-control';
+import * as Ado from './ado';
 const { THREE } = window;
 
 const scene = new THREE.Scene();
@@ -29,18 +30,18 @@ const fragmentShader = `
 `;
 
 // music
-const listener = new THREE.AudioListener();
-camera.add(listener);
-const sound = new THREE.Audio(listener);
-const loader = new THREE.AudioLoader();
-loader.load('/docs/music.mp3', buffer => {
-  sound.setBuffer(buffer);
-  // sound.setLoop(true);
-  sound.play();
+const stage = new Ado.Stage();
+const player = new Ado.Player();
+player.load('/docs/music.mp3').then(() => {
+  player.play();
 
-  const anaylser = new THREE.AudioAnalyser(sound);
+  const ele = stage.createElement();
+  const source = new Ado.SourceNode(player);
+  ele.append(source);
+  const analyser = new Ado.Analyser();
+  source.append(analyser);
 
-  const len = anaylser.analyser.frequencyBinCount;
+  const len = analyser.frequencyBinCount;
   const buf = new Uint8Array(len);
 
   console.log(len, buf);
@@ -69,10 +70,10 @@ loader.load('/docs/music.mp3', buffer => {
   // animate
   function animate() {
     requestAnimationFrame(animate);
-    const data = anaylser.getFrequencyData();
-    for (let i = 0; i < data.length; i++) {
-      buf[i] = data[i];
-    }
+    analyser.update(buf);
+    // for (let i = 0; i < data.length; i++) {
+    //   buf[i] = data[i];
+    // }
     ring.geometry.attributes.displacement.needsUpdate = true;
     controls.update();
     renderer.render(scene, camera);

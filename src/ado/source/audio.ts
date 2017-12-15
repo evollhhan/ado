@@ -67,9 +67,10 @@ export default class AdoPlayer implements IAudioPlayer {
       throw new Error('src is not defined.');
     }
 
-    this.ready = false;
     this.audio.crossOrigin = crossOrigin;
-    this.audio.src = this.src;
+    this.ready = false;
+    this.src = src;
+    this.audio.src = src;
 
     return new Promise((res, rej) => {
       this.res = res;
