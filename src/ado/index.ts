@@ -56,7 +56,7 @@ class Sounder {
  * Processor
  * ---------
  */
-class Processor extends PipeNode {
+class Processor1 extends PipeNode {
   private node: ScriptProcessorNode;
   private handled: boolean;
   constructor(ctx: AudioContext, param: IProcessorConf = {}) {

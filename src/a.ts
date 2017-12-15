@@ -8,4 +8,5 @@ const player = new Ado.Player();
 ele.input(player);
 
 // processor
-const processor = ele.append(Ado.Processor);
+const processor = new Ado.Processor();
+ele.append(processor);
