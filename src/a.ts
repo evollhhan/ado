@@ -1,12 +1,22 @@
 import * as Ado from './ado';
 
 const stage = new Ado.Stage();
+
+// new Element
 const ele = stage.createElement();
 
-// player
+// source node
 const player = new Ado.Player();
-ele.input(player);
+const source = new Ado.SourceNode(player);
+ele.append(source);
 
-// processor
+// processor node
 const processor = new Ado.Processor();
-ele.append(processor);
+source.append(processor);
+
+// analayser node
+const analayser = new Ado.Analayser();
+processor.append(analayser);
+
+// play music
+player.play();
