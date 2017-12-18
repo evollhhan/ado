@@ -1,28 +1,20 @@
 import PipeNode from '../core/pipe-node';
 
-interface IAdoProcessorConf {
-  /** 缓冲区大小 */
-  bufferSize?: 256 | 512 | 1024 | 2048 | 4096 | 8192 | 16384;
-  /** 输入通道数 */
-  numberOfInputChannels?: number;
-  /** 输出通道数 */
-  numberOfOutputChannels?: number;
-}
-
 export default class AdoProcessor extends PipeNode {
   /** Processor配置 */
-  public config: IAdoProcessorConf;
+  public readonly config: IAdoProcessorConf;
   /** Processor节点 */
-  public node: ScriptProcessorNode;
+  public readonly node: ScriptProcessorNode;
   /** 是否有处理方法 */
   private handled: boolean;
 
   /**
    * 初始化Processor
+   * @param ctx 上下文
    * @param conf 配置
    */
-  constructor(conf: IAdoProcessorConf = {}) {
-    super();
+  constructor(ctx: AudioContext, conf: IAdoProcessorConf) {
+    super(ctx);
     this.config = {
       ...{
         bufferSize: 256,
@@ -32,9 +24,6 @@ export default class AdoProcessor extends PipeNode {
       ...conf
     };
     this.handled = false;
-  }
-
-  protected main(): void {
     this.node = this.ctx.createScriptProcessor(
       this.config.bufferSize,
       this.config.numberOfInputChannels,

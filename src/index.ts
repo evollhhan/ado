@@ -29,22 +29,31 @@ const fragmentShader = `
   }
 `;
 
+//
+//
 // music
-const stage = new Ado.Stage();
+//
+//
+
 const player = new Ado.Player();
+const ctx = new Ado.Context();
+const source = ctx.createSourceNode(player);
+const analyser = ctx.createAnalyser({
+  fftSize: 64,
+  region: 'F'
+});
+source.connect(analyser);
+analyser.output();
+
+//
+//
+//
 player.load('/docs/music.mp3').then(() => {
   player.play();
 
-  const ele = stage.createElement();
-  const source = new Ado.SourceNode(player);
-  ele.append(source);
-  const analyser = new Ado.Analyser();
-  source.append(analyser);
-
   const len = analyser.frequencyBinCount;
   const buf = new Uint8Array(len);
-
-  console.log(len, buf);
+  console.log(len);
 
   const shaderMaterial = new THREE.ShaderMaterial({
     vertexShader,
@@ -52,8 +61,8 @@ player.load('/docs/music.mp3').then(() => {
   });
 
   // create ring
-  const geometry = new THREE.RingBufferGeometry(200, 201, 511);
-  geometry.addAttribute( 'displacement', new THREE.BufferAttribute( buf, 1 ) );
+  const geometry = new THREE.RingBufferGeometry(200, 201, len / 2 - 1);
+  geometry.addAttribute('displacement', new THREE.BufferAttribute( buf, 1 ) );
   const ring = new THREE.Mesh(geometry, shaderMaterial);
   // debugger;
   scene.add(ring);
@@ -71,9 +80,6 @@ player.load('/docs/music.mp3').then(() => {
   function animate() {
     requestAnimationFrame(animate);
     analyser.update(buf);
-    // for (let i = 0; i < data.length; i++) {
-    //   buf[i] = data[i];
-    // }
     ring.geometry.attributes.displacement.needsUpdate = true;
     controls.update();
     renderer.render(scene, camera);

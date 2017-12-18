@@ -1,41 +1,34 @@
 import PipeNode from '../core/pipe-node';
 
-type TRegion = 'T' | 'F';
-type TArrayType = 'f' | 'b';
-
-interface IAdoAnalyserConf {
-  /** 设定FFT大小，默认为 8 */
-  fftSize?: number;
-  /** 频域 / 时域，默认为时域 */
-  region?: TRegion;
-  /** 数组类型：Float32 / Uint8，默认为Uint8 */
-  type?: TArrayType;
-}
-
 export default class AdoAnalyser extends PipeNode {
   /** 分析节点 */
-  public node: AnalyserNode;
+  public readonly node: AnalyserNode;
   /** 采样数量 */
-  public frequencyBinCount: number;
-  /** 更新采样数据 */
-  public update: (data?: Uint8Array | Float32Array) => void;
+  public readonly frequencyBinCount: number;
+  /** 跟新器名称 */
+  private updater: string;
   /** 配置 */
   private conf: IAdoAnalyserConf;
 
   /**
    * 创建一个分析器。
+   * @param ctx 上下文
    * @param conf 分析器配置
    */
-  constructor(conf: IAdoAnalyserConf = {}) {
-    super();
+  constructor(ctx: AudioContext, conf: IAdoAnalyserConf) {
+    super(ctx);
     this.conf = {
       ...{
-        fftSize: 8,
+        fftSize: 32,
         region: 'T',
         type: 'b'
       },
       ...conf
     };
+    this.node = this.ctx.createAnalyser();
+    this.node.fftSize = this.conf.fftSize;
+    this.frequencyBinCount = this.node.frequencyBinCount;
+    this.createUpdater(this.conf.region, this.conf.type);
   }
 
   /**
@@ -44,19 +37,20 @@ export default class AdoAnalyser extends PipeNode {
    * @param type 数组类型
    */
   private createUpdater(region: TRegion, type: TArrayType): void {
-    this.update = region === 'F'
+    this.updater = region === 'F'
       ? type === 'f'
-        ? this.node.getFloatFrequencyData
-        : this.node.getByteFrequencyData
+        ? 'getFloatFrequencyData'
+        : 'getByteFrequencyData'
       : type === 'f'
-        ? this.node.getFloatFrequencyData
-        : this.node.getByteTimeDomainData;
+        ? 'getFloatFrequencyData'
+        : 'getByteTimeDomainData';
   }
 
-  protected main(): void {
-    this.node = this.ctx.createAnalyser();
-    this.node.fftSize = this.conf.fftSize;
-    this.frequencyBinCount = this.node.frequencyBinCount;
-    this.createUpdater(this.conf.region, this.conf.type);
+  /**
+   * 更新音频采样数据
+   * @param data 需要更新的buffer对象
+   */
+  public update(data?: Uint8Array | Float32Array): void {
+    this.node[this.updater](data);
   }
 }

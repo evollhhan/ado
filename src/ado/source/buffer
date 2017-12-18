@@ -195,39 +195,4 @@ export default class Ado {
       })
     }
   }
-
-  private rafPolyfill(): any {
-    const raf = (() => {
-      if (window.requestAnimationFrame) {
-        return window.requestAnimationFrame.bind(window)
-      }
-      else if (window.webkitRequestAnimationFrame) {
-        return window.webkitRequestAnimationFrame.bind(window)
-      }
-      else {
-        return ((fn) => {
-          return setTimeout(fn, this.fps);
-        });
-      }
-    })();
-
-    const caf = (() => {
-      if (window.cancelAnimationFrame) {
-        return window.cancelAnimationFrame.bind(window)
-      }
-      else if (window.webkitCancelAnimationFrame) {
-        return window.webkitCancelAnimationFrame.bind(window)
-      }
-      else {
-        return ((requestId) => {
-          return clearTimeout(requestId);
-        });
-      }
-    })();
-
-    return {
-      raf,
-      caf
-    }
-  }
 }
