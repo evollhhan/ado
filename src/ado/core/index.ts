@@ -2,6 +2,7 @@ import AdoPlayer from '../source/audio';
 import SourceNode from '../source/source-node';
 import AdoAnalyser from '../analyser/index';
 import AdoProcessor from '../processor/index';
+import AdoOscillator from '../oscillator';
 
 /**
  * Ado Context
@@ -14,6 +15,10 @@ export default class AdoContext {
   constructor() {
     const context = window.AudioContext || window.webkitAudioContext;
     this.ctx = new context();
+  }
+
+  public createOscillator(conf: any) {
+    return new AdoOscillator(this.ctx, conf);
   }
 
   /**
