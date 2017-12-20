@@ -17,7 +17,11 @@ export default class AdoContext {
     this.ctx = new context();
   }
 
-  public createOscillator(conf: any) {
+  /**
+   * 创建一个波形
+   * @param conf 波形配置
+   */
+  public createOscillator(conf: IAdoOscillatorConf = {}) {
     return new AdoOscillator(this.ctx, conf);
   }
 
