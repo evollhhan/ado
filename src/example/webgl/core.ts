@@ -9,10 +9,12 @@ export default class Visual {
   public play: () => void;
   private camera: any;
   private renderer: any;
-  private material: any;
+  // private material: any;
   private controls: any;
   private displacement: any[];
   private listOfGeom: any[];
+  private renderCb: (...args: any[]) => void;
+  // private now: number;
 
   /**
    * 根据配置初始化场景
@@ -32,18 +34,18 @@ export default class Visual {
   private init(): void {
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    this.material = new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true });
+    // this.material = new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true });
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
     this.renderer.setSize(window.innerWidth, window.innerHeight);
-    this.renderer.setClearColor(0x222222, 1);
+    // this.renderer.setClearColor(0x222222, 1);
     document.body.appendChild(this.renderer.domElement);
     this.controls = new THREE.OrbitControls(this.camera);
-    this.camera.position.set(0, 0, 100);
+    this.camera.position.set(0, 130, 100);
     this.controls.update();
     this.play = this.playScene.bind(this);
     this.displacement = [];
     this.listOfGeom = [];
-    console.log(this.material);
+    // this.now = 0;
 
     window.scene = this.scene;
   }
@@ -54,7 +56,7 @@ export default class Visual {
    */
   public loadBufferAttr(bufferList: Uint8Array[]): void {
     bufferList.forEach(buf => {
-      this.displacement.push(new THREE.BufferAttribute(buf, 3));
+      this.displacement.push(new THREE.BufferAttribute(buf, 1));
     });
   }
 
@@ -63,12 +65,11 @@ export default class Visual {
     const degreeStep = Math.PI * 2 / this.barNum;
     for (let i = 0; i < this.barNum; i++) {
       const degree = degreeStep * i;
-      const geom = new THREE.PlaneBufferGeometry(10, 10);
+      const geom = new THREE.PlaneBufferGeometry(10, 1);
       if (i < this.displacement.length) {
         geom.addAttribute('displacement', this.displacement[i]);
         this.listOfGeom.push(geom);
       }
-      // const shape = new THREE.Mesh(geom, this.material);
       const shape = new THREE.Mesh(geom, ShaderMaterial);
       shape.position.x = this.r * Math.sin(degree);
       shape.position.z = this.r * Math.cos(degree);
@@ -77,9 +78,24 @@ export default class Visual {
     }
   }
 
+  /** 当播放场景时 */
+  public onRender(cb: (...args: any[]) => void): void {
+    this.renderCb = cb.bind(null);
+  }
+
   /** 播放场景 */
   public playScene(): void {
     requestAnimationFrame(this.play);
+
+    // // lock frame
+    // const now = Date.now();
+    // if (now - this.now < 30) {
+    //   return;
+    // } else {
+    //   this.now = now;
+    // }
+
+    this.renderCb();
 
     this.listOfGeom.forEach(geom => {
       geom.attributes.displacement.needsUpdate = true;
@@ -87,5 +103,6 @@ export default class Visual {
 
     this.controls.update();
     this.renderer.render(this.scene, this.camera);
+
   }
 }

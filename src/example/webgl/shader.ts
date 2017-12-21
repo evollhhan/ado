@@ -1,22 +1,24 @@
 const { THREE } = window;
 
 const vertexShader = `
-  attribute vec3 displacement;
-  varying vec3 vPosition;
+  attribute float displacement;
+  varying float posy;
 
   void main() {
-    vPosition = position + displacement;
+    vec3 vPosition = position;
+    vPosition.y = vPosition.y + displacement / 255.0 * 100.0;
+    posy = vPosition.y;
     gl_Position = projectionMatrix * modelViewMatrix * vec4(vPosition, 1.0);
   }
 `;
 
 const fragmentShader = `
-  varying vec3 vPosition;
-  const float PI = 3.1415927;
+  varying float posy;
 
   void main() {
-    float r = vPosition.y / 255.0;
-    gl_FragColor = vec4(r, 0.0, 0.0, 1.0);
+    float r = posy / 100.0;
+    float b = r < 0.2 ? 0.4 - r : r - 0.4;
+    gl_FragColor = vec4(r, 0.0, b, r);
   }
 `;
 

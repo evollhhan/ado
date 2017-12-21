@@ -1,16 +1,25 @@
 import './geometry-console';
 import Visual from './core';
+import { Player, Context } from '../../ado';
 
-export default function main() {
+export default async function main() {
+  const player = new Player();
+  await player.load('./docs/music.mp3');
+  const ctx = new Context();
+  const source = ctx.createSourceNode(player);
+  const analyser = ctx.createAnalyser({ fftSize: 64, region: 'F' });
+  const bufLen = analyser.frequencyBinCount;
+  const bufData = new Uint8Array(bufLen);
+
+  source.connect(analyser);
+  analyser.output();
+
   // buffer Data
-  const testData = [10, 20, 30, 40, 50, 10, 20, 30, 40, 50];
+  // const testData = [10, 20, 30, 40, 50, 10, 20, 30, 40, 50];
   const bufferList = [];
-  for (let i = 0; i < testData.length; i += 1) {
-    const buf = new Uint8Array(12);
-    buf[0] = buf[2] = buf[3] = buf[5]
-           = buf[6] = buf[7] = buf[8]
-           = buf[9] = buf[10] = buf[11] = 0;
-    buf[1] = buf[4] = testData[i];
+  for (let i = 0; i < 24; i += 1) {
+    const buf = new Uint8Array(4);
+    buf[0] = buf[1] = bufData[i];
     bufferList.push(buf);
   }
 
@@ -18,5 +27,19 @@ export default function main() {
   const visual = new Visual(24, 50);
   visual.loadBufferAttr(bufferList);
   visual.createStage();
+
+  visual.onRender(() => {
+    analyser.update(bufData);
+    bufferList.forEach((b, i) => {
+      b[0] = b[1] = bufData[i];
+    });
+  });
+
+  window.addEventListener('click', () => {
+    console.log(bufData);
+  });
+
+  // play
   visual.play();
+  player.play();
 }
